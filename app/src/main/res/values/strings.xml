@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">InspireMe</string>
+    <string name="random">Random</string>
+    <string name="favorites">Favorites</string>
+    <string name="saved">Saved</string>
+    <string name="close_icon">Close icon</string>
+    <string name="search_icon">Search icon</string>
+    <string name="search_quotations">Search quotations</string>
+    <string name="categories">Categories</string>
+    <string name="loading">Loading</string>
+    <string name="loading_failed">Failed to load</string>
+    <string name="retry">Retry</string>
+
+</resources>
