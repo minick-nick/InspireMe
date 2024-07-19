@@ -7,7 +7,7 @@ InspireMe is an app built with Kotlin and Jetpack Compose, using data from Quota
 
 Splash Screen | Quotations List | Search
 ------------- | --------------- | -----------
-<img src="screenshots/splash.gif" width="250" /> | <img src="screenshots/details.gif" width="250" /> | <img src="screenshots/search.gif" width="250" />
+<img src="screenshots/splash.gif" width="248" /> | <img src="screenshots/details.gif" width="248" /> | <img src="screenshots/search.gif" width="248" />
 
 ## ✨ Features
 - Displays random quotations along with the author's name and picture
