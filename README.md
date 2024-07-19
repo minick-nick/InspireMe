@@ -1,6 +1,4 @@
 # InspireMe (Quotations App)
-InspireMe app built with Kotlin, Jetpack Compose and data from Quotable (an open source quotations API). This app displays random quotations from different authors that will made you inspire.
-
 InspireMe is an app built with Kotlin and Jetpack Compose, using data from Quotable—an open-source quotations API. The app displays random quotes from various authors, aiming to inspire and uplift.
 
 👉 Check out the [Quotable open-source API GitHub Repo](https://github.com/lukePeavey/quotable?tab=readme-ov-file)
