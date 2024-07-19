@@ -1,5 +1,5 @@
 [versions]
-agp = "8.4.0"
+agp = "8.5.0"
 kotlin = "1.9.0"
 coreKtx = "1.13.1"
 junit = "4.13.2"
@@ -15,8 +15,9 @@ kotlinSerializationConverter = "1.0.0"
 kotlinSerializationJson = "1.5.1"
 viewmodelCompose = "2.6.1"
 swiperefresh = "0.27.0"
-room = "2.6.0"
+room = "2.6.1"
 ksp = "1.9.20-1.0.14"
+navigationCompose = "2.7.7"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -43,6 +44,8 @@ accompanist-swiperefresh =  { group = "com.google.accompanist", name = "accompan
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
+navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose"}
+
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

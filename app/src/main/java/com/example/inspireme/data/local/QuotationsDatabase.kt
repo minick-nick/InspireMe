@@ -4,9 +4,10 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import com.example.inspireme.data.Quotation
+import com.example.inspireme.data.local.model.LocalQuotation
+import com.example.inspireme.data.local.model.Tag
 
-@Database(entities = [Quotation.LocalQuotation::class], version = 1, exportSchema = false)
+@Database(entities = [LocalQuotation::class, Tag::class], version = 1, exportSchema = false)
 abstract class QuotationDatabase : RoomDatabase() {
     abstract fun quotationDao(): QuotationDao
 
@@ -17,7 +18,7 @@ abstract class QuotationDatabase : RoomDatabase() {
         fun getDatabase(context: Context): QuotationDatabase {
             return Instance ?: synchronized(this) {
                 Room.databaseBuilder(context, QuotationDatabase::class.java, "quotation_database")
-                    .fallbackToDestructiveMigration()
+                    .createFromAsset("database/quotation_database.db")
                     .build()
                     .also { Instance = it }
             }

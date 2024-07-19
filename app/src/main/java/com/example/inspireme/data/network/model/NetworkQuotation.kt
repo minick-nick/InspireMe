@@ -1,13 +1,10 @@
-package com.example.inspireme.data.network
+package com.example.inspireme.data.network.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-
-
-/*
 @Serializable
-data class Quotation(
+data class NetworkQuotation(
     @SerialName("_id")
     val id: String,
     val content: String,
@@ -15,4 +12,3 @@ data class Quotation(
     val tags: List<String>,
     val authorSlug: String
 )
-*/

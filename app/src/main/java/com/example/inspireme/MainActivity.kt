@@ -13,9 +13,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             InspireMeTheme {
-                Surface {
-                    InspireMeApp()
-                }
+                InspireMeApp()
             }
         }
     }

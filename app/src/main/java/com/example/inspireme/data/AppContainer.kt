@@ -37,6 +37,8 @@ class AppDataContainer(private val context: Context): AppContainer {
     }
 
     override val offlineQuotationRepository: QuotationRepository by lazy {
-        OfflineQuotationRepository(QuotationDatabase.getDatabase(context).quotationDao())
+        OfflineQuotationRepository(
+            quotationDao =  QuotationDatabase.getDatabase(context).quotationDao()
+        )
     }
 }

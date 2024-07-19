@@ -1,14 +1,12 @@
-package com.example.inspireme.ui
+package com.example.inspireme.ui.home
 
+import android.content.Intent
 import androidx.annotation.StringRes
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,26 +17,22 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkBorder
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.Bookmark
-import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Share
-import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
-import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -50,71 +44,104 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat.startActivity
+import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.example.inspireme.FloatingActionSearchButton
 import com.example.inspireme.R
-import com.example.inspireme.data.Quotation
+import com.example.inspireme.ui.ErrorScreen
+import com.example.inspireme.ui.LoadingScreen
+import com.example.inspireme.ui.QuotationDetails
+import com.example.inspireme.ui.QuotationsRequest
+import com.example.inspireme.ui.ViewModelUtils
+import com.example.inspireme.ui.authorImageSrc
 import com.example.inspireme.ui.theme.InspireMeTheme
 import com.google.accompanist.swiperefresh.SwipeRefresh
 import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 import kotlinx.coroutines.launch
 
+enum class Tab(@StringRes val title: Int) {
+    Random(R.string.random),
+    Saved(R.string.saved)
+}
 
 @Composable
 fun HomeScreen(
-    modifier: Modifier = Modifier,
-    onEvent: (Event) -> Unit,
-    randomQuotationsRequestState: QuotationsRequestState,
-    savedQuotations: List<Quotation.LocalQuotation>
+    viewModel: HomeViewModel = viewModel(factory = HomeViewModel.Factory),
+    navigateToSearch: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val tabs = listOf(
-        Tab(title = R.string.random),
-        Tab(title = R.string.favorites),
-        Tab(title = R.string.saved)
-    )
-    Tabs(
-        modifier = modifier,
-        tabs = tabs
-    ) { currentPage ->
-        when (currentPage) {
-            0 -> {
+    val uiState = viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionSearchButton(onSearch = navigateToSearch)
+                               },
+        modifier = modifier
+    ) {
+        HomeBody(
+            homeUiState = uiState.value,
+            onSaveQuotation = { quotation ->
+                if (quotation.isSaved) viewModel.unsavedQuotation(quotation)
+                else viewModel.saveQuotation(quotation)
+            },
+            onShareQuotation = { viewModel.shareQuotation(context, it) },
+            onReloadRandomQuotations = { viewModel.getRandomQuotations() },
+            modifier = Modifier.padding(it)
+        )
+    }
+}
+
+@Composable
+fun HomeBody(
+    homeUiState: HomeUiState,
+    onSaveQuotation: (QuotationDetails) -> Unit,
+    onShareQuotation: (QuotationDetails) -> Unit,
+    onReloadRandomQuotations: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    TabsContainer(
+        tabs = Tab.values(),
+        modifier = modifier
+    ) { currentTab ->
+        when (currentTab) {
+            Tab.Random -> {
                 val swipeRefreshState = rememberSwipeRefreshState(
-                    isRefreshing = randomQuotationsRequestState is QuotationsRequestState.Loading
+                    isRefreshing = homeUiState.randomQuotationsRequest is QuotationsRequest.Loading
                 )
 
-                when(randomQuotationsRequestState) {
-                    is QuotationsRequestState.Success -> {
+                when(homeUiState.randomQuotationsRequest) {
+                    is QuotationsRequest.Success -> {
                         SwipeRefresh(
                             state = swipeRefreshState,
-                            onRefresh = { onEvent(Event.ReloadRandomQuotations) }
+                            onRefresh = onReloadRandomQuotations
                         ) {
                             QuotationsList(
-                                quotations = randomQuotationsRequestState.quotations,
-                                onEvent = onEvent
+                                quotations = homeUiState.randomQuotationsRequest.quotations,
+                                onSaveQuotation = onSaveQuotation,
+                                onShareQuotation = onShareQuotation
                             )
                         }
                     }
-                    is QuotationsRequestState.Loading -> {
+                    is QuotationsRequest.Loading -> {
                         LoadingScreen()
                     }
-                    is QuotationsRequestState.Error -> {
-                        ErrorScreen(onEvent = onEvent)
+                    is QuotationsRequest.Error -> {
+                        ErrorScreen(onRetry = onReloadRandomQuotations)
                     }
                 }
             }
-            1 -> {
-                Text("Current page is $currentPage")
-            }
-            2 -> {
+            Tab.Saved -> {
                 QuotationsList(
-                    quotations = savedQuotations,
-                    onEvent = onEvent
+                    quotations = homeUiState.savedQuotations,
+                    onSaveQuotation = onSaveQuotation,
+                    onShareQuotation = onShareQuotation
                 )
             }
         }
@@ -123,16 +150,18 @@ fun HomeScreen(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun Tabs(
+fun TabsContainer(
+    tabs: Array<Tab>,
     modifier: Modifier = Modifier,
-    tabs: List<Tab>,
-    content: @Composable (Int) -> Unit
+    content: @Composable (Tab) -> Unit
 ) {
     val pagerState = rememberPagerState(pageCount = { tabs.size })
     val coroutineScope = rememberCoroutineScope()
 
     Column(modifier = modifier) {
-        TabRow(selectedTabIndex = pagerState.currentPage) {
+        TabRow(
+            selectedTabIndex = pagerState.currentPage
+        ) {
             tabs.forEachIndexed { index, tab ->
                 Tab(
                     selected = (pagerState.currentPage == index),
@@ -146,22 +175,24 @@ fun Tabs(
             }
         }
         HorizontalPager(state = pagerState) {
-            content(pagerState.currentPage)
+            content(Tab.values()[pagerState.currentPage])
         }
     }
 }
 
 @Composable
 fun QuotationsList(
-    modifier: Modifier = Modifier,
-    quotations: List<Quotation>,
-    onEvent: (Event) -> Unit
+    quotations: List<QuotationDetails>,
+    onSaveQuotation: (QuotationDetails) -> Unit,
+    onShareQuotation: (QuotationDetails) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     LazyColumn(modifier = modifier) {
-        items(quotations) {
+        items(quotations) { quotation ->
             Quotation(
-                quotation = it,
-                onEvent = onEvent
+                quotation = quotation,
+                onSave = { onSaveQuotation(quotation) },
+                onShare = { onShareQuotation(quotation) }
             )
             Divider(
                 thickness = 0.5.dp,
@@ -172,25 +203,10 @@ fun QuotationsList(
 }
 
 @Composable
-fun SearchButton(
-    modifier: Modifier = Modifier,
-    onSearch: () -> Unit
-) {
-    FloatingActionButton(
-        onClick = onSearch,
-        modifier = modifier
-    ) {
-        Icon(
-            imageVector = Icons.Rounded.Search,
-            contentDescription = null
-        )
-    }
-}
-
-@Composable
 fun Quotation(
-    quotation: Quotation,
-    onEvent: (Event) -> Unit,
+    quotation: QuotationDetails,
+    onSave: () -> Unit,
+    onShare: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -202,12 +218,7 @@ fun Quotation(
     ) {
         AsyncImage(
             model = ImageRequest.Builder(context = LocalContext.current)
-                .data("https://images.quotable.dev/profile/200/${
-                    when(quotation) {
-                        is Quotation.LocalQuotation -> {quotation.authorSlug}
-                        is Quotation.NetworkQuotation -> {quotation.authorSlug}
-                    }
-                }.jpg")
+                .data(quotation.authorImageSrc)
                 .crossfade(true)
                 .build()
             ,
@@ -221,10 +232,7 @@ fun Quotation(
             verticalArrangement = Arrangement.spacedBy(dimensionResource(R.dimen.extra_small_padding))
         ) {
             Text(
-                text = when(quotation) {
-                    is Quotation.LocalQuotation -> {quotation.author}
-                    is Quotation.NetworkQuotation -> {quotation.author}
-                },
+                text = quotation.author,
                 style = MaterialTheme.typography.titleMedium
             )
             Card(
@@ -234,10 +242,7 @@ fun Quotation(
                 border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outlineVariant)
             ) {
                 Text(
-                    text = when(quotation) {
-                        is Quotation.LocalQuotation -> {quotation.content}
-                        is Quotation.NetworkQuotation -> {quotation.content}
-                    },
+                    text = quotation.content,
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
@@ -245,18 +250,14 @@ fun Quotation(
                             horizontal = dimensionResource(R.dimen.large_padding),
                             vertical = 36.dp
                         )
+                        .fillMaxWidth()
                 )
             }
             Options(
                 iconButtonModifier = Modifier.size(dimensionResource(R.dimen.medium_icon_button_size)),
-                onSave = {
-                    when(quotation) {
-                        is Quotation.LocalQuotation -> { }
-                        is Quotation.NetworkQuotation ->  onEvent(Event.SaveQuotation(quotation))
-                    }
-                         },
-                onFavorite = {  },
-                onShare = {  }
+                quotation = quotation,
+                onSave = onSave,
+                onShare = onShare
             )
         }
     }
@@ -264,11 +265,11 @@ fun Quotation(
 
 @Composable
 fun Options(
-    modifier: Modifier = Modifier,
     iconButtonModifier: Modifier,
+    quotation: QuotationDetails,
     onSave: () -> Unit,
-    onFavorite: () -> Unit,
-    onShare: () -> Unit
+    onShare: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -277,52 +278,24 @@ fun Options(
             alignment = Alignment.End
         )
     ) {
-        var isSaved by remember { mutableStateOf(false) }
-        var isFavorite by remember { mutableStateOf(false) }
-
-
         IconToggleButton(
-            checked = isSaved,
-            onCheckedChange = {
-                isSaved = it
-            },
+            checked = quotation.isSaved,
+            onCheckedChange = { onSave() },
             modifier = iconButtonModifier
         ) {
-            if (isSaved) {
+            if (quotation.isSaved) {
                 Icon(
                     imageVector = Icons.Outlined.Bookmark,
                     contentDescription = null,
                     tint = Color(0xFF2178B7)
                 )
             } else {
-                onSave()
                 Icon(
                     imageVector = Icons.Filled.BookmarkBorder,
                     contentDescription = null
                 )
             }
         }
-
-        IconToggleButton(
-            checked = isFavorite,
-            onCheckedChange = { isFavorite = it },
-            modifier = iconButtonModifier
-        ) {
-            if (isFavorite) {
-                Icon(
-                    imageVector = Icons.Filled.Favorite,
-                    contentDescription = null,
-                    tint = Color(0xFFF51B1B)
-                )
-            } else {
-                onFavorite()
-                Icon(
-                    imageVector = Icons.Outlined.FavoriteBorder,
-                    contentDescription = null
-                )
-            }
-        }
-
         IconButton(
             onClick = onShare,
             modifier = iconButtonModifier
@@ -335,55 +308,38 @@ fun Options(
     }
 }
 
-@Composable
-fun LoadingScreen(modifier: Modifier = Modifier) {
-    Box(modifier = modifier.fillMaxSize()) {
-        Image(
-            modifier = Modifier
-                .size(300.dp)
-                .align(Alignment.Center),
-            painter = painterResource(R.drawable.loading_img),
-            contentDescription = stringResource(R.string.loading)
-        )
-    }
-}
-
-@Composable
-fun ErrorScreen(
-    onEvent: (Event) -> Unit,
-    modifier: Modifier = Modifier)
-{
-    Column(
-        modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        Image(
-            painter = painterResource(id = R.drawable.ic_connection_error), contentDescription = ""
-        )
-        Text(
-            text = stringResource(R.string.loading_failed),
-            style = LocalTextStyle.current.copy(
-                fontFamily = FontFamily.Default
-            ),
-            modifier = Modifier.padding(16.dp))
-        Button(onClick = { onEvent(Event.ReloadRandomQuotations) }) {
-            Text(stringResource(R.string.retry))
-        }
-    }
-}
-
-data class Tab(@StringRes val title: Int)
-
 @Preview
 @Composable
 fun HomeScreenPreview() {
     InspireMeTheme {
         Surface {
-            HomeScreen(
-                randomQuotationsRequestState = QuotationsRequestState.Loading,
-                savedQuotations = listOf(),
-                onEvent = {}
+            HomeBody(
+                homeUiState = HomeUiState(
+                    savedQuotations = emptyList(),
+                    randomQuotationsRequest = QuotationsRequest.Success(
+                        listOf(
+                            QuotationDetails(
+                                id = "",
+                                author = "Bruce Lee",
+                                content = "Mistakes are always forgivable, if one has the courage to admit them.",
+                                tags = listOf(),
+                                authorSlug = "",
+                                isSaved = true
+                            ),
+                            QuotationDetails(
+                                id = "",
+                                author = "Laozi",
+                                content = "He who controls others may be powerful, but he who has mastered himself is mightier still.",
+                                tags = listOf(),
+                                authorSlug = "",
+                                isSaved = false
+                            )
+                        )
+                    )
+                ),
+                onSaveQuotation = { },
+                onShareQuotation = { },
+                onReloadRandomQuotations = { }
             )
         }
     }
@@ -395,14 +351,16 @@ fun QuotationPreview() {
     InspireMeTheme {
         Surface {
             Quotation(
-                quotation = Quotation.NetworkQuotation(
+                quotation = QuotationDetails(
                     id = "",
-                    author = "",
-                    content = "",
+                    author = "Bruce Lee",
+                    content = "Mistakes are always forgivable, if one has the courage to admit them.",
                     tags = listOf(),
-                    authorSlug = ""
+                    authorSlug = "",
+                    isSaved = true
                 ),
-                onEvent = {}
+                onSave = {},
+                onShare = {}
             )
         }
     }

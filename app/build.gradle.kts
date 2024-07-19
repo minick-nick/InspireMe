@@ -23,9 +23,20 @@ android {
     }
 
     buildTypes {
+        debug {
+            isMinifyEnabled = true
+            isShrinkResources = true
+
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            signingConfig = signingConfigs.getByName("debug")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -68,6 +79,7 @@ dependencies {
     implementation(libs.material.icons)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.accompanist.swiperefresh)
+    implementation(libs.navigation.compose)
 
     // Retrofit
     implementation(libs.retrofit)
